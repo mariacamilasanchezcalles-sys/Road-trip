@@ -40,7 +40,7 @@
       TURNOS.push({
         sobre: s,
         responde: s === 'cami' ? 'rodri' : 'cami',
-        texto: String(q.pregunta || '').replace(/\{nombre\}/g, NOM[s]),
+        texto: String(q.pregunta || '').replace(/\{nombre\}/g, NOM[s]).replace(/\{a\}/g, s === 'cami' ? 'a' : 'o'),
         respuesta: resp || ''
       });
     }
@@ -66,13 +66,27 @@
     retos: function () { return { orden: barajar(C.retos.length), pos: 0, max: 0 }; }
   };
 
+  function firma(lista) {
+    var t = JSON.stringify(lista), h = 0;
+    for (var i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0;
+    return lista.length + ':' + h;
+  }
   function cargar() {
     var s = {};
     try { s = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) { s = {}; }
     Object.keys(NUEVO).forEach(function (k) {
       if (!s[k] || typeof s[k] !== 'object') s[k] = NUEVO[k]();
     });
-    // Si el contenido cambió de tamaño, rehacer el orden de las barajas
+    // Si cambió el contenido de un juego, ese juego empieza de cero (los demás no se tocan)
+    var firmas = {
+      prefieres: C.quePrefieres, conoces: C.cuantoMeConoces, vida: C.nuestraVidaSi, palabras: C.palabras, retos: C.retos
+    };
+    s.firmas = s.firmas || {};
+    Object.keys(firmas).forEach(function (k) {
+      var f = firma(firmas[k]);
+      if (s.firmas[k] !== undefined && s.firmas[k] !== f) s[k] = NUEVO[k]();
+      s.firmas[k] = f;
+    });
     if (s.vida.orden.length !== C.nuestraVidaSi.length) s.vida = NUEVO.vida();
     if (s.retos.orden.length !== C.retos.length) s.retos = NUEVO.retos();
     return s;
@@ -344,7 +358,7 @@
       var r = S.prefieres.resp[i];
       if (!r || !r.cami || !r.rodri) return;
       var igual = r.cami === r.rodri;
-      filas += '<div class="h-fila col"><div class="h-top"><span class="h-num">' + (i + 1) + '</span><span class="h-txt">' + esc(q.pregunta) +
+      filas += '<div class="h-fila col"><div class="h-top"><span class="h-num">' + (i + 1) + '</span><span class="h-txt">' + esc(q.opcion1) + ' <i class="suave">o</i> ' + esc(q.opcion2) +
         '</span><span>' + (igual ? '💞' : '🔀') + '</span></div><div class="h-det"><span class="c-cami">Cami:</span> ' + esc(q['opcion' + r.cami]) +
         ' · <span class="c-rodri">Rodri:</span> ' + esc(q['opcion' + r.rodri]) + '</div></div>';
     });
@@ -360,6 +374,7 @@
       st.pct + '%</b><span>Aciertos</span></div></div>';
     h += reglas([
       'Cada pregunta dice quién responde y sobre quién se pregunta.',
+      'La persona sobre la que se pregunta la lee en voz alta (está escrita en primera persona: «mi», «yo»).',
       'Quien responde lo dice en voz alta.',
       'La persona sobre la que se pregunta confirma si acertó.',
       '1 punto por respuesta correcta, 0 si no.'

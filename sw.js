@@ -1,6 +1,6 @@
 /* ROAD TRIP — service worker: guarda la app en el teléfono para usarla sin internet.
    Las actualizaciones (p. ej. data/contenido.js) se descargan solas al abrir la app con internet. */
-var VERSION = 'roadtrip-v1';
+var VERSION = 'roadtrip-v2';
 var ARCHIVOS = [
   './',
   'index.html',
